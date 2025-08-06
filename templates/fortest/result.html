@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Natija{% endblock %}
+
+{% block content %}
+<div class="alert alert-success">
+    <h4>Natijangiz:</h4>
+    <p>To‘g‘ri javoblar: <strong>{{ correct }}</strong> / {{ total }}</p>
+    <p>Noto‘g‘ri javoblar: <strong>{{ wrong }}</strong></p>
+</div>
+<a href="{% url 'test_view' %}" class="btn btn-primary">Qaytadan ishlash</a>
+{% endblock %}

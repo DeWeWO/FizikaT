@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load richtext_filters %}
+
+{% block title %}Test{% endblock %}
+
+{% block content %}
+
+<!-- MathJax ulanishi -->
+<script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['\\[', '\\]'], ['$$', '$$']]
+        },
+        svg: { fontCache: 'global' }
+    };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<form method="post" action="{% url 'submit_test' %}">
+    {% csrf_token %}
+    {% for q in questions %}
+        <div class="card my-4">
+            <div class="card-header">
+                <strong>Savol {{ forloop.counter }}:</strong>
+            </div>
+            <div class="card-body">
+                <!-- Savol matni (LaTeX formulali) -->
+                <div>{{ q.question_text|render_richtext }}</div>
+
+                <!-- Variantlar -->
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="radio" name="q{{ q.id }}" value="a" id="q{{ q.id }}a">
+                    <label class="form-check-label" for="q{{ q.id }}a">A. {{ q.option_a|render_richtext }}</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="q{{ q.id }}" value="b" id="q{{ q.id }}b">
+                    <label class="form-check-label" for="q{{ q.id }}b">B. {{ q.option_b|render_richtext }}</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="q{{ q.id }}" value="c" id="q{{ q.id }}c">
+                    <label class="form-check-label" for="q{{ q.id }}c">C. {{ q.option_c|render_richtext }}</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="q{{ q.id }}" value="d" id="q{{ q.id }}d">
+                    <label class="form-check-label" for="q{{ q.id }}d">D. {{ q.option_d|render_richtext }}</label>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Testni tugatish</button>
+</form>
+{% endblock %}
