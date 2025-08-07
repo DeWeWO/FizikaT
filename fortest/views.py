@@ -1,14 +1,14 @@
-from django.shortcuts import render, redirect
-from django.http import HttpResponse
-from .models import Question
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Question, Categories
 
+def category_questions(request, category_id):
+    category = get_object_or_404(Categories, id=category_id)
+    questions = category.questions.all()
+    return render(request, 'fortest/test.html', {'category': category, 'questions': questions})
 
-def hello(request):
-    return HttpResponse('Hello World!')
-
-def test_view(request):
-    questions = Question.objects.all()
-    return render(request, 'fortest/test.html', {'questions': questions})
+# def test_view(request):
+#     questions = Question.objects.all()
+#     return render(request, 'fortest/test.html', {'questions': questions})
 
 def submit_test(request):
     if request.method == 'POST':

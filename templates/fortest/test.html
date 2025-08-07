@@ -1,53 +1,91 @@
 {% extends 'base.html' %}
-{% load richtext_filters %}
+{% load auto_mathjax %}
+{% load static %}
 
 {% block title %}Test{% endblock %}
 
 {% block content %}
 
-<!-- MathJax ulanishi -->
-<script>
-    window.MathJax = {
-        tex: {
-            inlineMath: [['$', '$'], ['\\(', '\\)']],
-            displayMath: [['\\[', '\\]'], ['$$', '$$']]
-        },
-        svg: { fontCache: 'global' }
-    };
-</script>
-<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<h2>{{ category.title }}</h2>
+<p>{{ category.description }}</p>
 
-<form method="post" action="{% url 'submit_test' %}">
-    {% csrf_token %}
-    {% for q in questions %}
-        <div class="card my-4">
-            <div class="card-header">
-                <strong>Savol {{ forloop.counter }}:</strong>
-            </div>
-            <div class="card-body">
-                <!-- Savol matni (LaTeX formulali) -->
-                <div>{{ q.question_text|render_richtext }}</div>
+<div class="formbold-main-wrapper">
+  <div class="formbold-form-wrapper">
+    <img class="formbold-img" src="{% static '1_1.png' %}" alt="Test rasmi">
+    <form method="post" action="{% url 'submit_test' %}">
 
-                <!-- Variantlar -->
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="radio" name="q{{ q.id }}" value="a" id="q{{ q.id }}a">
-                    <label class="form-check-label" for="q{{ q.id }}a">A. {{ q.option_a|render_richtext }}</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="q{{ q.id }}" value="b" id="q{{ q.id }}b">
-                    <label class="form-check-label" for="q{{ q.id }}b">B. {{ q.option_b|render_richtext }}</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="q{{ q.id }}" value="c" id="q{{ q.id }}c">
-                    <label class="form-check-label" for="q{{ q.id }}c">C. {{ q.option_c|render_richtext }}</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="q{{ q.id }}" value="d" id="q{{ q.id }}d">
-                    <label class="form-check-label" for="q{{ q.id }}d">D. {{ q.option_d|render_richtext }}</label>
+        {% csrf_token %}
+        {% for q in questions %}
+            <div class="formbold-mb-5">
+                <label for="qusOne" class="formbold-form-label">
+                    <h4>Savol {{ forloop.counter }}:</h4>
+                </label>
+
+                <div class="formbold-mb-5">
+                    <label for="qusOne" class="formbold-form-label">
+                    <!-- Savol matni (LaTeX formulali) -->
+                     <h5>{{ q.question_text|auto_mathjax|safe }}</h5>
+                    </label>
+
+                    <!-- Variantlar -->
+
+
+                    <div class="formbold-radio-flex">
+                        <div class="formbold-radio-group">
+                            <label class="formbold-radio-label" for="q{{ q.id }}a">
+                            <input class="formbold-input-radio" type="radio" name="q{{ q.id }}" value="a" id="q{{ q.id }}a"/>
+                            <div class="radio-content">
+                                <span>A.</span>
+                                {{ q.option_a|auto_mathjax|safe }}
+                            </div>
+                            <span class="formbold-radio-checkmark"></span></label>
+                        </div>
+                    </div>
+
+                    <div class="formbold-radio-flex">
+                        <div class="formbold-radio-group">
+                            <label class="formbold-radio-label" for="q{{ q.id }}b">
+                            <input class="formbold-input-radio" type="radio" name="q{{ q.id }}" value="b" id="q{{ q.id }}b"/>
+                             
+                            <div class="radio-content">
+                                <span>B.</span>
+                                {{ q.option_b|auto_mathjax|safe }}
+                            </div>
+                            <span class="formbold-radio-checkmark"></span></label>
+                        </div>
+                    </div>
+
+                    <div class="formbold-radio-flex">
+                        <div class="formbold-radio-group">
+                            <label class="formbold-radio-label" for="q{{ q.id }}c">
+                            <input class="formbold-input-radio" type="radio" name="q{{ q.id }}" value="c" id="q{{ q.id }}c"/>
+                            <div class="radio-content">
+                                <span>C.</span>
+                                {{ q.option_c|auto_mathjax|safe }}
+                            </div>
+                            <span class="formbold-radio-checkmark"></span></label>
+                        </div>
+                    </div>
+
+                    <div class="formbold-radio-flex">
+                        <div class="formbold-radio-group">
+                            <label class="formbold-radio-label" for="q{{ q.id }}d">
+                            <input class="formbold-input-radio" type="radio" name="q{{ q.id }}" value="d" id="q{{ q.id }}d"/>
+                            <div class="radio-content">
+                                <span>D.</span>
+                                {{ q.option_d|auto_mathjax|safe }}
+                            </div>
+                            <span class="formbold-radio-checkmark"></span></label>
+                        </div>
+                    </div>
+
                 </div>
             </div>
-        </div>
-    {% endfor %}
-    <button type="submit" class="btn btn-primary">Testni tugatish</button>
-</form>
+        {% endfor %}
+        <button type="submit" class="formbold-btn">Testni tugatish</button>
+
+    </form>
+  </div>
+</div>
+
 {% endblock %}
