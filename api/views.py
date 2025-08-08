@@ -3,11 +3,21 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404, render
 from django.db import IntegrityError
-from fortest.models import Categories, Question, User, Register
+from django.db.models import Avg
+import asyncio
+import aiohttp
+from fortest.models import Categories, Question, User, Register, TestResult
 from .serializers import (
     CategorySerializer, QuestionSerializer, QuestionListSerializer,
-    UserSerializer, RegisterSerializer, TestResultSerializer
+    UserSerializer, RegisterSerializer, TestResultSerializer, TestResultModelSerializer
 )
+from environs import Env
+
+env = Env()
+env.read_env()
+
+BOT_TOKEN = env.str("BOT_TOKEN")  # Bu yerga bot tokeningizni qo'ying
+BOT_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Categories.objects.all()
@@ -43,6 +53,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             data = serializer.validated_data
             category_id = data['category_id']
+            telegram_id = data['telegram_id']
             answers = data['answers']
             
             try:
@@ -66,6 +77,21 @@ class QuestionViewSet(viewsets.ModelViewSet):
                 if is_correct:
                     correct_count += 1
             
+            # Natijani bazaga saqlash
+            test_result = TestResult.objects.create(
+                telegram_id=telegram_id,
+                category=category,
+                total_questions=total_count,
+                correct_answers=correct_count,
+                wrong_answers=total_count - correct_count,
+                percentage=round((correct_count / total_count) * 100, 2) if total_count > 0 else 0
+            )
+            
+            # Telegram orqali xabar yuborish
+            asyncio.create_task(self.send_telegram_notification(
+                telegram_id, category.title, correct_count, total_count, test_result.percentage
+            ))
+            
             return render(request, 'fortest/result.html', {
                 'total': total_count,
                 'correct': correct_count,
@@ -74,6 +100,35 @@ class QuestionViewSet(viewsets.ModelViewSet):
             })
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    async def send_telegram_notification(self, telegram_id, category_title, correct, total, percentage):
+        """Foydalanuvchiga telegram orqali natijani yuborish"""
+        message = f"""
+📊 Test natijalari:
+
+🎯 Kategoriya: {category_title}
+✅ To'g'ri javoblar: {correct}/{total}
+❌ Noto'g'ri javoblar: {total - correct}
+📈 Foiz: {percentage}%
+
+🎉 Tabriklaymiz!
+        """
+        
+        payload = {
+            'chat_id': telegram_id,
+            'text': message.strip(),
+            'parse_mode': 'HTML'
+        }
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(BOT_API_URL, json=payload) as resp:
+                    if resp.status == 200:
+                        print(f"Telegram xabar yuborildi: {telegram_id}")
+                    else:
+                        print(f"Telegram xabar yuborishda xatolik: {resp.status}")
+        except Exception as e:
+            print(f"Telegram API xatolik: {e}")
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -176,3 +231,50 @@ class RegisterViewSet(viewsets.ModelViewSet):
             return Response({
                 'registered': False
             })
+
+
+# views.py ga qo'shish kerak
+
+class TestResultViewSet(viewsets.ModelViewSet):
+    queryset = TestResult.objects.all()
+    serializer_class = TestResultModelSerializer
+    
+    def get_queryset(self):
+        queryset = TestResult.objects.all()
+        telegram_id = self.request.query_params.get('telegram_id', None)
+        category_id = self.request.query_params.get('category_id', None)
+        
+        if telegram_id is not None:
+            queryset = queryset.filter(telegram_id=telegram_id)
+        if category_id is not None:
+            queryset = queryset.filter(category_id=category_id)
+            
+        return queryset
+    
+    @action(detail=False, methods=['get'])
+    def user_stats(self, request):
+        """Foydalanuvchi statistikasi"""
+        telegram_id = request.query_params.get('telegram_id')
+        if not telegram_id:
+            return Response(
+                {'error': 'telegram_id majburiy'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        results = TestResult.objects.filter(telegram_id=telegram_id)
+        total_tests = results.count()
+        
+        if total_tests == 0:
+            return Response({'message': 'Hech qanday test natijalari topilmadi'})
+        
+        from django.db.models import Avg
+        avg_percentage = results.aggregate(
+            avg_percentage=Avg('percentage')
+        )['avg_percentage']
+        
+        return Response({
+            'telegram_id': telegram_id,
+            'total_tests': total_tests,
+            'average_percentage': round(avg_percentage, 2) if avg_percentage else 0,
+            'results': TestResultModelSerializer(results, many=True).data
+        })

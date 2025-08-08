@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from fortest.models import Question, Categories, User, Register
+from fortest.models import Question, Categories, User, Register, TestResult
 
 class CategorySerializer(serializers.ModelSerializer):
     questions_count = serializers.SerializerMethodField()
@@ -49,3 +49,13 @@ class TestResultSerializer(serializers.Serializer):
             if answer not in ['a', 'b', 'c', 'd']:
                 raise serializers.ValidationError(f"Javob '{answer}' noto'g'ri format")
         return value
+
+
+class TestResultModelSerializer(serializers.ModelSerializer):
+    category_title = serializers.CharField(source='category.title', read_only=True)
+    
+    class Meta:
+        model = TestResult
+        fields = ['id', 'telegram_id', 'category', 'category_title', 'total_questions', 
+                 'correct_answers', 'wrong_answers', 'percentage', 'completed_at']
+        read_only_fields = ['id', 'completed_at']

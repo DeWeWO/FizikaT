@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Question, Categories, User, Register
+from .models import Question, Categories, User, Register, TestResult
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
@@ -61,6 +61,25 @@ class CategoriesAdmin(admin.ModelAdmin):
                 'title',
                 'slug',
                 'description',
+            )
+        }),
+    )
+
+
+@admin.register(TestResult)
+class TestResultAdmin(admin.ModelAdmin):
+    list_display = ['telegram_id', 'category', 'correct_answers', 'total_questions']
+    
+    fieldsets = (
+        (None, {
+            'fields': (
+                'telegram_id',
+                'category',
+                'total_questions',
+                'correct_answers',
+                'wrong_answers',
+                'percentage',
+                'completed_at',
             )
         }),
     )
