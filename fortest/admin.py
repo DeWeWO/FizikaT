@@ -1,5 +1,31 @@
 from django.contrib import admin
-from .models import Question, Categories
+from .models import Question, Categories, User, Register
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    list_display = ['telegram_id', 'first_name', 'last_name', 'username']
+    fieldsets = (
+        (None, {
+            'fields': (
+                'telegram_id',
+                'first_name',
+                'last_name',
+                'username',
+            )
+        }),
+    )
+
+@admin.register(Register)
+class RegisterAdmin(admin.ModelAdmin):
+    list_display = ['telegram_id', 'fio']
+    fieldsets = (
+        (None, {
+            'fields': (
+                'telegram_id',
+                'fio',
+            )
+        }),
+    )
 
 
 @admin.register(Question)
@@ -27,6 +53,7 @@ class QuestionAdmin(admin.ModelAdmin):
 @admin.register(Categories)
 class CategoriesAdmin(admin.ModelAdmin):
     list_display = ['title', 'description']
+    readonly_fields = ['slug']
     
     fieldsets = (
         (None, {
