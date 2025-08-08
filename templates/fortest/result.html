@@ -7,5 +7,5 @@
     <p>To‘g‘ri javoblar: <strong>{{ correct }}</strong> / {{ total }}</p>
     <p>Noto‘g‘ri javoblar: <strong>{{ wrong }}</strong></p>
 </div>
-<a href="{% url 'test_view' %}" class="btn btn-primary">Qaytadan ishlash</a>
+<a href="{% url 'category_questions' slug=category.slug %}" class="btn btn-primary">Qaytadan ishlash</a>
 {% endblock %}

@@ -48,3 +48,4 @@ class Question(BaseModel):
     class Meta:
         ordering = ['-id']
         db_table = 'questions'
+        

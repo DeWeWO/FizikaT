@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Question, Categories
 
-def category_questions(request, category_id):
-    category = get_object_or_404(Categories, id=category_id)
+def category_questions(request, slug):
+    category = get_object_or_404(Categories, slug=slug)
     questions = category.questions.all()
     return render(request, 'fortest/test.html', {'category': category, 'questions': questions})
 
@@ -10,9 +10,13 @@ def category_questions(request, category_id):
 #     questions = Question.objects.all()
 #     return render(request, 'fortest/test.html', {'questions': questions})
 
-def submit_test(request):
+from django.shortcuts import get_object_or_404
+
+def submit_test(request, slug):
     if request.method == 'POST':
-        questions = Question.objects.all()
+        category = get_object_or_404(Categories, slug=slug)
+        questions = category.questions.all()  # faqat shu kategoriyaga tegishli savollar
+
         correct = 0
         total = questions.count()
 
@@ -25,4 +29,7 @@ def submit_test(request):
             'total': total,
             'correct': correct,
             'wrong': total - correct,
+            'category': category,
         })
+    # POST bo'lmagan holatda foydalanuvchini test sahifasiga qaytarish mumkin
+    return redirect('category_questions', slug=slug)
