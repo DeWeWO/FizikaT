@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from fortest.models import Question, Categories
+from .models import Question, Categories
 
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
