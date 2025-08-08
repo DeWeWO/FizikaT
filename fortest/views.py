@@ -6,12 +6,6 @@ def category_questions(request, slug):
     questions = category.questions.all()
     return render(request, 'fortest/test.html', {'category': category, 'questions': questions})
 
-# def test_view(request):
-#     questions = Question.objects.all()
-#     return render(request, 'fortest/test.html', {'questions': questions})
-
-from django.shortcuts import get_object_or_404
-
 def submit_test(request, slug):
     if request.method == 'POST':
         category = get_object_or_404(Categories, slug=slug)

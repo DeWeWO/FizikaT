@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'rest_framework',
     # my_apps
     'fortest.apps.FortestConfig',
+    'api.apps.ApiConfig',
     # 
     'ckeditor',
     'ckeditor_uploader',
