@@ -6,6 +6,7 @@
     <h4>Natijangiz:</h4>
     <p>To‘g‘ri javoblar: <strong>{{ correct }}</strong> / {{ total }}</p>
     <p>Noto‘g‘ri javoblar: <strong>{{ wrong }}</strong></p>
+    <p>{{ telegram_id }}</p>
 </div>
 <a href="{% url 'category_questions' slug=category.slug %}" class="btn btn-primary">Qaytadan ishlash</a>
 {% endblock %}

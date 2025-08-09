@@ -29,10 +29,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
         """Kategoriya bo'yicha savollarni HTML sifatida olish"""
         category = self.get_object()
         questions = category.questions.all()
+        telegram_id = request.GET.get('telegram_id')
         
         return render(request, 'fortest/test.html', {
-            'category': category, 
-            'questions': questions
+            'category': category,
+            'questions': questions,
+            'telegram_id': telegram_id
         })
 
 class QuestionViewSet(viewsets.ModelViewSet):

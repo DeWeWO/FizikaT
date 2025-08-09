@@ -12,7 +12,7 @@
 <div class="formbold-main-wrapper">
   <div class="formbold-form-wrapper">
     <img class="formbold-img" src="{% static '1_1.png' %}" alt="Test rasmi">
-    <form method="post" action="{% url 'submit_test' slug=category.slug %}">
+    <form method="post" action="{% url 'submit_test' slug=category.slug %}?telegram_id={{ telegram_id }}">
 
         {% csrf_token %}
         {% for q in questions %}
