@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from fortest.models import Question, Categories, TelegramUser, Register, TestResult, Admin
+from fortest.models import Question, Categories, Register, TestResult
 
 class CategorySerializer(serializers.ModelSerializer):
     questions_count = serializers.SerializerMethodField()
@@ -26,11 +26,6 @@ class QuestionListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ['id', 'question_text', 'option_a', 'option_b', 'option_c', 'option_d']
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TelegramUser
-        fields = ['id', 'first_name', 'last_name', 'username', 'telegram_id']
 
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -59,26 +54,3 @@ class TestResultModelSerializer(serializers.ModelSerializer):
         fields = ['id', 'telegram_id', 'category', 'category_title', 'total_questions', 
                  'correct_answers', 'wrong_answers', 'percentage', 'completed_at']
         read_only_fields = ['id', 'completed_at']
-
-
-class TelegramAdminRegistrationSerializer(serializers.Serializer):
-    telegram_id = serializers.IntegerField()
-    first_name = serializers.CharField(max_length=255)
-    last_name = serializers.CharField(max_length=255)
-    username = serializers.CharField(max_length=255, required=False, allow_null=True)
-    is_superuser = serializers.BooleanField(default=False)
-    
-class AdminResponseSerializer(serializers.ModelSerializer):
-    user_info = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Admin
-        fields = ['id', 'is_active', 'is_superuser', 'created_at', 'user_info']
-        
-    def get_user_info(self, obj):
-        return {
-            'first_name': obj.user.first_name,
-            'last_name': obj.user.last_name,
-            'username': obj.user.username,
-            'telegram_id': obj.user.telegram_id
-        }

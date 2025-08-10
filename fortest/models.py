@@ -53,24 +53,6 @@ class Question(BaseModel):
         db_table = 'questions'
 
 
-class TelegramUser(models.Model):
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
-    username = models.CharField(max_length=255, null=True, blank=True)
-    telegram_id = models.BigIntegerField(unique=True)
-
-    def __str__(self):
-        return f"{self.first_name} {self.last_name} (@{self.username})"
-    
-    @property
-    def is_admin(self):
-        """Foydalanuvchi admin ekanligini tekshirish"""
-        return hasattr(self, 'admin_profile') and self.admin_profile.is_active
-    
-    class Meta:
-        db_table = 'user'
-
-
 class Register(models.Model):
     fio = models.CharField(max_length=255)
     telegram_id = models.BigIntegerField(unique=True)
@@ -80,25 +62,6 @@ class Register(models.Model):
     
     class Meta:
         db_table = 'register'
-
-
-class Admin(models.Model):
-    user = models.OneToOneField(TelegramUser, on_delete=models.CASCADE, related_name='admin_profile')
-    email = models.EmailField(unique=True, null=True, blank=True)
-    password_hash = models.CharField(max_length=255, null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-    is_superuser = models.BooleanField(default=False)
-    created_via_telegram = models.BooleanField(default=True)
-    permissions = models.TextField(null=True, blank=True)  # JSON format da ruxsatlar
-    created_at = models.DateTimeField(auto_now_add=True)
-    last_login = models.DateTimeField(null=True, blank=True)
-    
-    def __str__(self):
-        return f"Admin: {self.user.first_name} {self.user.last_name}"
-    
-    class Meta:
-        db_table = 'admin'
-
 
 class TestResult(models.Model):
     telegram_id = models.BigIntegerField()

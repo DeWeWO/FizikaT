@@ -61,21 +61,6 @@ class QuestionAdmin(admin.ModelAdmin):
         return obj.question_text[:50] + "..." if len(obj.question_text) > 50 else obj.question_text
     question_text_short.short_description = "Savol matni"
 
-# TelegramUser admin
-@admin.register(TelegramUser)
-class TelegramUserAdmin(admin.ModelAdmin):
-    list_display = ('first_name', 'last_name', 'username', 'telegram_id', 'is_admin')
-    list_filter = ('first_name', 'last_name')
-    search_fields = ('first_name', 'last_name', 'username', 'telegram_id')
-    readonly_fields = ('telegram_id',)
-
-# Admin model admin
-@admin.register(Admin)
-class AdminModelAdmin(admin.ModelAdmin):
-    list_display = ('user', 'email', 'is_active', 'is_superuser', 'created_via_telegram', 'created_at')
-    list_filter = ('is_active', 'is_superuser', 'created_via_telegram', 'created_at')
-    search_fields = ('user__first_name', 'user__last_name', 'email')
-    readonly_fields = ('created_at', 'last_login')
 
 # Register admin
 @admin.register(Register)

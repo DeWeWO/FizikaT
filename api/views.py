@@ -15,11 +15,55 @@ from django.contrib.auth.hashers import make_password
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from fortest.models import Categories, Question, TelegramUser, Register, TestResult, Admin, TelegramSession
+from fortest.models import Categories, Question, Register, TestResult, TelegramSession
 from .serializers import (
-    CategorySerializer, QuestionSerializer, UserSerializer,
+    CategorySerializer, QuestionSerializer,
     RegisterSerializer, TestResultSerializer, TestResultModelSerializer
 )
+
+# views.py da
+class CustomUsersListView(View):
+    def get(self, request):
+        try:
+            users = CustomUser.objects.all().values(
+                'id', 'username', 'first_name', 'last_name', 
+                'telegram_id', 'telegram_username', 'is_staff', 
+                'is_active', 'created_via_telegram', 'date_joined'
+            )
+            return JsonResponse({
+                'success': True,
+                'results': list(users),
+                'count': users.count()
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            }, status=500)
+
+# views.py ga qo'shing
+@method_decorator(csrf_exempt, name='dispatch')
+class RegisterUsersListView(View):
+    """Register jadvalidagi barcha foydalanuvchilarni olish"""
+    
+    def get(self, request):
+        try:
+            
+            register_users = Register.objects.all().values(
+                'id', 'fio', 'telegram_id'
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'results': list(register_users),
+                'count': register_users.count()
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            }, status=500)
 
 
 @csrf_exempt
@@ -55,23 +99,11 @@ def simple_test_register(request):
             )
             print(f"User created: {user_created}, User: {user}")  # Debug
             
-            # Admin profil yaratish
-            admin_profile, admin_created = Admin.objects.get_or_create(
-                user=user,
-                defaults={
-                    'is_active': True,
-                    'is_superuser': False,
-                    'created_via_telegram': True
-                }
-            )
-            print(f"Admin created: {admin_created}, Admin: {admin_profile}")  # Debug
-            
             return JsonResponse({
                 'success': True,
                 'message': 'Admin muvaffaqiyatli yaratildi!',
                 'data': {
                     'user_created': user_created,
-                    'admin_created': admin_created,
                     'telegram_id': telegram_id,
                     'name': f"{first_name} {last_name}"
                 }
@@ -204,49 +236,6 @@ class QuestionViewSet(viewsets.ModelViewSet):
             })
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = TelegramUser.objects.all()
-    serializer_class = UserSerializer
-    lookup_field = 'telegram_id'
-    
-    @action(detail=False, methods=['post'])
-    def get_or_create_user(self, request):
-        """Foydalanuvchini olish yoki yaratish"""
-        telegram_id = request.data.get('telegram_id')
-        if not telegram_id:
-            return Response(
-                {'error': 'telegram_id majburiy'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            user, created = CustomUser.objects.get_or_create(
-                telegram_id=telegram_id,
-                defaults={
-                    'first_name': request.data.get('first_name', ''),
-                    'last_name': request.data.get('last_name', ''),
-                    'username': request.data.get('username', ''),
-                }
-            )
-            
-            if not created:
-                user.first_name = request.data.get('first_name', user.first_name)
-                user.last_name = request.data.get('last_name', user.last_name)
-                user.username = request.data.get('username', user.username)
-                user.save()
-            
-            return Response({
-                'user': UserSerializer(user).data,
-                'created': created
-            })
-            
-        except IntegrityError:
-            return Response(
-                {'error': 'Ma\'lumotlar bazasida xatolik'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
 
 class RegisterViewSet(viewsets.ModelViewSet):
     queryset = Register.objects.all()
