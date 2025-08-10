@@ -1,28 +1,25 @@
 import json
 import secrets
 import asyncio
+from datetime import timedelta
+from django.db import IntegrityError, transaction
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.shortcuts import render
+from django.views import View
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.shortcuts import render
-from django.db import IntegrityError, transaction
-from fortest.models import Categories, Question, TelegramUser, Register, TestResult, Admin
+from fortest.models import Categories, Question, TelegramUser, Register, TestResult, Admin, TelegramSession
 from .serializers import (
     CategorySerializer, QuestionSerializer, UserSerializer,
     RegisterSerializer, TestResultSerializer, TestResultModelSerializer
 )
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.contrib.auth import get_user_model, login
-from django.contrib.auth.hashers import make_password
-from django.shortcuts import redirect
-from fortest.models import TelegramSession
-from django.http import JsonResponse
-from django.utils.decorators import method_decorator
-from django.views import View
-from datetime import datetime, timedelta
-
 
 
 @csrf_exempt
