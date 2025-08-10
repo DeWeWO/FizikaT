@@ -146,7 +146,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Tashkent'
 
 USE_I18N = True
 
@@ -170,3 +170,20 @@ CKEDITOR_UPLOAD_PATH = "uploads/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = 'fortest.CustomUser'
+
+# Admin panel sozlamalari
+ADMIN_URL = 'admin/'  # Default
+ADMIN_SITE_HEADER = 'Test Bot Admin Panel'
+ADMIN_SITE_TITLE = 'Test Bot Admin'
+ADMIN_INDEX_TITLE = 'Bosh sahifa'
+
+# Telegram Bot sozlamalari (ixtiyoriy)
+TELEGRAM_BOT_TOKEN = 'your_bot_token_here'
+TELEGRAM_ADMIN_GROUP_ID = -1001234567890  # Admin guruh ID si
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'fortest.backends.TelegramAuthBackend',
+]

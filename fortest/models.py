@@ -1,6 +1,9 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 from django.template.defaultfilters import slugify
 from ckeditor.fields import RichTextField
+from django.utils import timezone
+
 
 class BaseModel(models.Model):
     created = models.DateTimeField(auto_now_add=True)
@@ -50,7 +53,7 @@ class Question(BaseModel):
         db_table = 'questions'
 
 
-class User(models.Model):
+class TelegramUser(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     username = models.CharField(max_length=255, null=True, blank=True)
@@ -58,6 +61,11 @@ class User(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} (@{self.username})"
+    
+    @property
+    def is_admin(self):
+        """Foydalanuvchi admin ekanligini tekshirish"""
+        return hasattr(self, 'admin_profile') and self.admin_profile.is_active
     
     class Meta:
         db_table = 'user'
@@ -72,6 +80,24 @@ class Register(models.Model):
     
     class Meta:
         db_table = 'register'
+
+
+class Admin(models.Model):
+    user = models.OneToOneField(TelegramUser, on_delete=models.CASCADE, related_name='admin_profile')
+    email = models.EmailField(unique=True, null=True, blank=True)
+    password_hash = models.CharField(max_length=255, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    is_superuser = models.BooleanField(default=False)
+    created_via_telegram = models.BooleanField(default=True)
+    permissions = models.TextField(null=True, blank=True)  # JSON format da ruxsatlar
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_login = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"Admin: {self.user.first_name} {self.user.last_name}"
+    
+    class Meta:
+        db_table = 'admin'
 
 
 class TestResult(models.Model):
@@ -89,3 +115,20 @@ class TestResult(models.Model):
     
     def __str__(self):
         return f"User {self.telegram_id} - {self.category.title} - {self.percentage}%"
+
+class CustomUser(AbstractUser):
+    telegram_id = models.BigIntegerField(unique=True, null=True, blank=True)
+    telegram_username = models.CharField(max_length=100, null=True, blank=True)
+    created_via_telegram = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} (@{self.telegram_username or self.username})"
+
+class TelegramSession(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='telegram_session')
+    session_token = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    last_used = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Session: {self.user.username}"
