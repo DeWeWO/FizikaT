@@ -86,12 +86,3 @@ class CustomUser(AbstractUser):
     
     def __str__(self):
         return f"{self.first_name} {self.last_name} (@{self.telegram_username or self.username})"
-
-class TelegramSession(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='telegram_session')
-    session_token = models.CharField(max_length=255, unique=True)
-    created_at = models.DateTimeField(default=timezone.now)
-    last_used = models.DateTimeField(auto_now=True)
-    
-    def __str__(self):
-        return f"Session: {self.user.username}"

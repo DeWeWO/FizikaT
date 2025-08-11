@@ -1,9 +1,7 @@
 import json
-import secrets
 import asyncio
-from datetime import timedelta
+import logging
 from django.db import IntegrityError, transaction
-from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.shortcuts import render
 from django.views import View
@@ -12,16 +10,17 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
+from django.core.exceptions import ValidationError
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from fortest.models import Categories, Question, Register, TestResult, TelegramSession
+from fortest.models import Categories, Question, Register, TestResult
 from .serializers import (
     CategorySerializer, QuestionSerializer,
     RegisterSerializer, TestResultSerializer, TestResultModelSerializer
 )
 
-# views.py da
+
 class CustomUsersListView(View):
     def get(self, request):
         try:
@@ -391,166 +390,159 @@ class CheckUsernameAvailabilityView(View):
                 'message': str(e)
             }, status=500)
 
+logger = logging.getLogger(__name__)
+
 @method_decorator(csrf_exempt, name='dispatch')
 class TelegramAdminRegisterView(View):
     """Telegram orqali admin ro'yxatdan o'tkazish"""
     
     def post(self, request):
+        # So'rov haqida to'liq ma'lumot
+        logger.info("=== YANGI SO'ROV ===")
+        logger.info(f"Request method: {request.method}")
+        logger.info(f"Request path: {request.path}")
+        logger.info(f"Content-Type: {request.META.get('CONTENT_TYPE', 'N/A')}")
+        logger.info(f"Request body (raw): {request.body}")
+        
         try:
-            data = json.loads(request.body)
+            # 1. JSON ni parse qilish
+            try:
+                data = json.loads(request.body)
+                logger.info(f"Parsed JSON data: {data}")
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON decode xatoligi: {e}")
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Yaroqsiz JSON format!'
+                }, status=400)
             
-            # Zaruriy fieldlarni tekshirish
+            # 2. Zaruriy fieldlarni tekshirish
             required_fields = ['telegram_id', 'first_name', 'last_name', 'username', 'password']
+            missing_fields = []
+            
             for field in required_fields:
-                if not data.get(field):
-                    return JsonResponse({
-                        'success': False,
-                        'message': f'{field} maydoni bo\'sh bo\'lishi mumkin emas!'
-                    }, status=400)
+                value = data.get(field)
+                logger.info(f"Field '{field}': {value} (type: {type(value)})")
+                
+                if not value:  # None, empty string, 0, False
+                    missing_fields.append(field)
+                    
+                # String bo'lishi kerak bo'lgan fieldlar uchun
+                if field in ['first_name', 'last_name', 'username', 'password']:
+                    if not isinstance(value, str) or not value.strip():
+                        missing_fields.append(f"{field} (bo'sh string)")
+                        
+                # telegram_id integer bo'lishi kerak
+                if field == 'telegram_id':
+                    try:
+                        int(value)
+                    except (ValueError, TypeError):
+                        missing_fields.append(f"{field} (integer emas)")
             
-            # Mavjudligini tekshirish
-            if CustomUser.objects.filter(telegram_id=data['telegram_id']).exists():
+            if missing_fields:
+                error_msg = f"Quyidagi maydonlar noto'g'ri: {', '.join(missing_fields)}"
+                logger.error(error_msg)
                 return JsonResponse({
                     'success': False,
-                    'message': 'Bu Telegram ID allaqachon ro\'yxatdan o\'tgan!'
+                    'message': error_msg
                 }, status=400)
             
-            if CustomUser.objects.filter(username=data['username']).exists():
+            # 3. Ma'lumotlarni tozalash va tayyorlash
+            try:
+                cleaned_data = {
+                    'telegram_id': int(data['telegram_id']),
+                    'first_name': str(data['first_name']).strip(),
+                    'last_name': str(data['last_name']).strip(), 
+                    'username': str(data['username']).strip().lower(),
+                    'password': str(data['password']),
+                    'telegram_username': data.get('telegram_username', ''),
+                    'is_staff': data.get('is_staff', True),
+                    'is_superuser': data.get('is_superuser', False)
+                }
+                logger.info(f"Tozalangan ma'lumotlar: {cleaned_data}")
+                
+            except (ValueError, TypeError) as e:
+                logger.error(f"Ma'lumot tozalashda xatolik: {e}")
                 return JsonResponse({
                     'success': False,
-                    'message': 'Bu username allaqachon mavjud!'
+                    'message': f'Ma\'lumot formati noto\'g\'ri: {str(e)}'
                 }, status=400)
             
-            # Yangi admin user yaratish
-            user = CustomUser.objects.create(
-                username=data['username'],
-                first_name=data['first_name'],
-                last_name=data['last_name'],
-                password=make_password(data['password']),
-                telegram_id=data['telegram_id'],
-                telegram_username=data.get('telegram_username'),
-                created_via_telegram=True,
-                is_staff=data.get('is_staff', True),
-                is_active=True,
-                is_superuser=data.get('is_superuser', False),
-                email=f"{data['username']}@telegram.local"
-            )
+            # 4. Mavjudligini tekshirish
+            logger.info("Mavjudlik tekshiruvi...")
             
-            # Telegram session yaratish
-            session_token = secrets.token_urlsafe(32)
-            TelegramSession.objects.create(
-                user=user,
-                session_token=session_token
-            )
+            # Telegram ID tekshirish
+            existing_telegram = CustomUser.objects.filter(telegram_id=cleaned_data['telegram_id']).first()
+            if existing_telegram:
+                logger.warning(f"Telegram ID {cleaned_data['telegram_id']} allaqachon mavjud (User ID: {existing_telegram.id})")
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Bu Telegram ID allaqachon ro\'yxatdan o\'tgan! (User: {existing_telegram.username})'
+                }, status=400)
             
-            return JsonResponse({
-                'success': True,
-                'message': 'Admin muvaffaqiyatli yaratildi!',
-                'user_id': user.id,
-                'username': user.username
-            })
+            # Username tekshirish
+            existing_username = CustomUser.objects.filter(username=cleaned_data['username']).first()
+            if existing_username:
+                logger.warning(f"Username '{cleaned_data['username']}' allaqachon mavjud (User ID: {existing_username.id})")
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Bu username allaqachon mavjud! (User ID: {existing_username.id})'
+                }, status=400)
             
-        except json.JSONDecodeError:
-            return JsonResponse({
-                'success': False,
-                'message': 'Yaroqsiz JSON format!'
-            }, status=400)
+            # 5. Yangi admin user yaratish
+            logger.info("Yangi user yaratish...")
+            try:
+                user = CustomUser.objects.create(
+                    username=cleaned_data['username'],
+                    first_name=cleaned_data['first_name'],
+                    last_name=cleaned_data['last_name'],
+                    password=make_password(cleaned_data['password']),
+                    telegram_id=cleaned_data['telegram_id'],
+                    telegram_username=cleaned_data['telegram_username'],
+                    created_via_telegram=True,
+                    is_staff=cleaned_data['is_staff'],
+                    is_active=True,
+                    is_superuser=cleaned_data['is_superuser'],
+                    email=f"{cleaned_data['username']}@telegram.local"
+                )
+                
+                logger.info(f"User muvaffaqiyatli yaratildi: ID={user.id}, username={user.username}")
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Admin muvaffaqiyatli yaratildi!',
+                    'user_id': user.id,
+                    'username': user.username
+                })
+                
+            except ValidationError as e:
+                logger.error(f"Validation xatoligi: {e}")
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Ma\'lumot validatsiya xatoligi: {str(e)}'
+                }, status=400)
+                
+            except Exception as e:
+                logger.error(f"User yaratishda xatolik: {e}")
+                return JsonResponse({
+                    'success': False,
+                    'message': f'User yaratishda xatolik: {str(e)}'
+                }, status=500)
+            
         except Exception as e:
+            logger.error(f"Kutilmagan xatolik: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return JsonResponse({
                 'success': False,
                 'message': f'Server xatoligi: {str(e)}'
             }, status=500)
-
-@method_decorator(csrf_exempt, name='dispatch')
-class GetAdminTokenView(View):
-    """Admin uchun session token olish"""
     
-    def get(self, request, telegram_id):
-        try:
-            user = CustomUser.objects.get(
-                telegram_id=telegram_id,
-                is_staff=True,
-                is_active=True
-            )
-            
-            # Eski tokenni o'chirish yoki yangilash
-            session, created = TelegramSession.objects.get_or_create(
-                user=user,
-                defaults={'session_token': secrets.token_urlsafe(32)}
-            )
-            
-            if not created:
-                # Eski token ni yangilash
-                session.session_token = secrets.token_urlsafe(32)
-                session.save()
-            
-            return JsonResponse({
-                'success': True,
-                'session_token': session.session_token,
-                'username': user.username,
-                'is_superuser': user.is_superuser,
-                'expires_in': '10 minutes'
-            })
-            
-        except CustomUser.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Admin topilmadi yoki huquqlar yo\'q!'
-            }, status=404)
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': str(e)
-            }, status=500)
-
-@method_decorator(csrf_exempt, name='dispatch')
-class TelegramLoginView(View):
-    """Token orqali Django admin panelga kirish"""
-    
-    def get(self, request, token):
-        try:
-            # Token validatsiyasi
-            session = TelegramSession.objects.select_related('user').get(
-                session_token=token
-            )
-            
-            # Token vaqti tekshirish (10 daqiqa)
-            if session.created_at < timezone.now() - timedelta(minutes=10):
-                session.delete()
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Token vaqti tugagan!'
-                }, status=400)
-            
-            user = session.user
-            
-            # User faol va admin ekanligini tekshirish
-            if not (user.is_active and user.is_staff):
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Foydalanuvchi faol emas yoki admin huquqlari yo\'q!'
-                }, status=403)
-            
-            # Django session yaratish
-            from django.contrib.auth import login
-            
-            # Backend bilan login qilish
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            
-            # Tokenni o'chirish (bir marta ishlatish uchun)
-            session.delete()
-            
-            # Admin panelga yo'naltirish
-            from django.shortcuts import redirect
-            return redirect('/admin/')
-            
-        except TelegramSession.DoesNotExist:
-            return JsonResponse({
-                'success': False,
-                'message': 'Yaroqsiz yoki eskirgan token!'
-            }, status=404)
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Kirish xatoligi: {str(e)}'
-            }, status=500)
+    def get(self, request):
+        """GET so'rov uchun test method"""
+        logger.info("GET so'rov keldi")
+        return JsonResponse({
+            'message': 'Telegram Admin Register API ishlayapti',
+            'method': 'POST kerak',
+            'endpoint': '/api/telegram-admin-register/'
+        })

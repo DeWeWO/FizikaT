@@ -31,14 +31,6 @@ class CustomUserAdmin(UserAdmin):
     
     readonly_fields = ('date_joined', 'last_login', 'created_via_telegram')
 
-# TelegramSession admin
-@admin.register(TelegramSession)
-class TelegramSessionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'session_token', 'created_at', 'last_used')
-    list_filter = ('created_at', 'last_used')
-    search_fields = ('user__username', 'session_token')
-    readonly_fields = ('session_token', 'created_at', 'last_used')
-
 # Categories admin
 @admin.register(Categories)
 class CategoriesAdmin(admin.ModelAdmin):

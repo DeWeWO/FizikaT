@@ -185,5 +185,4 @@ TELEGRAM_ADMIN_GROUP_ID = -1001234567890  # Admin guruh ID si
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
-    'fortest.backends.TelegramAuthBackend',
 ]
