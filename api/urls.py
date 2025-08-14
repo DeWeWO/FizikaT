@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     CategoryViewSet, QuestionViewSet, RegisterViewSet,
     TestResultViewSet, CheckTelegramAdminView, CheckUsernameAvailabilityView,
-    TelegramAdminRegisterView, CustomUsersListView, RegisterUsersListView
+    TelegramAdminRegisterView, CustomUsersListView, RegisterUsersListView, add_telegram_group
 )
 
 router = DefaultRouter()
@@ -19,4 +19,5 @@ urlpatterns = [
     path('telegram-admin-register/', TelegramAdminRegisterView.as_view(), name='telegram_admin_register'),
     path('custom-users/', CustomUsersListView.as_view(), name='custom_users_list'),
     path('register-users/', RegisterUsersListView.as_view(), name='register_users_list'),
+    path('telegram/group/add/', add_telegram_group, name='add_telegram_group'),
 ]

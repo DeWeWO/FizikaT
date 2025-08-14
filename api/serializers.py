@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from fortest.models import Question, Categories, Register, TestResult
+from fortest.models import Question, Categories, Register, TestResult, TelegramGroup
 
 class CategorySerializer(serializers.ModelSerializer):
     questions_count = serializers.SerializerMethodField()
@@ -54,3 +54,19 @@ class TestResultModelSerializer(serializers.ModelSerializer):
         fields = ['id', 'telegram_id', 'category', 'category_title', 'total_questions', 
                  'correct_answers', 'wrong_answers', 'percentage', 'completed_at']
         read_only_fields = ['id', 'completed_at']
+
+class TelegramGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TelegramGroup
+        fields = ['group_id', 'group_name']
+        
+    def create(self, validated_data):
+        group, created = TelegramGroup.objects.get_or_create(
+            group_id=validated_data['group_id'],
+            defaults={'group_name': validated_data['group_name']}
+        )
+        if not created:
+            group.group_name = validated_data['group_name']
+            group.is_active = True
+            group.save()
+        return group

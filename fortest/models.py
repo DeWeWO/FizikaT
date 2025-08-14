@@ -86,3 +86,17 @@ class CustomUser(AbstractUser):
     
     def __str__(self):
         return f"{self.first_name} {self.last_name} (@{self.telegram_username or self.username})"
+
+class TelegramGroup(models.Model):
+    group_id = models.BigIntegerField(unique=True, db_index=True)
+    group_name = models.CharField(max_length=255)
+    added_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'telegram_groups'
+        verbose_name = 'Telegram Group'
+        verbose_name_plural = 'Telegram Groups'
+
+    def __str__(self):
+        return f"{self.group_name} ({self.group_id})"

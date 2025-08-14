@@ -60,6 +60,11 @@ class RegisterAdmin(admin.ModelAdmin):
     list_display = ('fio', 'telegram_id')
     search_fields = ('fio', 'telegram_id')
 
+@admin.register(TelegramGroup)
+class TelegramGroupAdmin(admin.ModelAdmin):
+    list_display = ('group_id', 'group_name', 'added_at', 'is_active')
+    search_fields = ('group_name',)
+
 # TestResult admin
 @admin.register(TestResult)
 class TestResultAdmin(admin.ModelAdmin):

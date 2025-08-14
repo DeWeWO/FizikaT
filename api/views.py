@@ -12,12 +12,12 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core.exceptions import ValidationError
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from fortest.models import Categories, Question, Register, TestResult
 from .serializers import (
-    CategorySerializer, QuestionSerializer,
-    RegisterSerializer, TestResultSerializer, TestResultModelSerializer
+    CategorySerializer, QuestionSerializer, RegisterSerializer, TestResultSerializer,
+    TestResultModelSerializer, TelegramGroupSerializer
 )
 
 
@@ -546,3 +546,19 @@ class TelegramAdminRegisterView(View):
             'method': 'POST kerak',
             'endpoint': '/api/telegram-admin-register/'
         })
+
+@api_view(['POST'])
+def add_telegram_group(request):
+    serializer = TelegramGroupSerializer(data=request.data)
+    if serializer.is_valid():
+        group = serializer.save()
+        return Response({
+            'success': True,
+            'message': 'Group added successfully',
+            'group_id': group.group_id,
+            'group_name': group.group_name
+        }, status=status.HTTP_201_CREATED)
+    return Response({
+        'success': False,
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
