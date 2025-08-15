@@ -14,7 +14,7 @@ from django.core.exceptions import ValidationError
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
-from fortest.models import Categories, Question, Register, TestResult
+from fortest.models import Categories, Question, Register, TestResult, TelegramGroup
 from .serializers import (
     CategorySerializer, QuestionSerializer, RegisterSerializer, TestResultSerializer,
     TestResultModelSerializer, TelegramGroupSerializer
@@ -562,3 +562,11 @@ def add_telegram_group(request):
         'success': False,
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["GET"])
+def get_all_group_ids(request):
+    """
+    Barcha aktiv guruh ID larini olish
+    """
+    groups = TelegramGroup.objects.filter(is_active=True).values_list("group_id", flat=True)
+    return Response({"group_ids": list(groups)}, status=status.HTTP_200_OK)
