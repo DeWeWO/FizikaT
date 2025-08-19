@@ -64,12 +64,10 @@ class Register(models.Model):
         db_table = 'register'
 
 class TestResult(models.Model):
-    telegram_id = models.BigIntegerField()
+    user = models.ForeignKey(Register, on_delete=models.CASCADE, related_name="result")
     category = models.ForeignKey(Categories, on_delete=models.CASCADE)
     total_questions = models.IntegerField()
     correct_answers = models.IntegerField()
-    wrong_answers = models.IntegerField()
-    percentage = models.DecimalField(max_digits=5, decimal_places=2)
     completed_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -77,7 +75,7 @@ class TestResult(models.Model):
         ordering = ['-completed_at']
     
     def __str__(self):
-        return f"User {self.telegram_id} - {self.category.title} - {self.percentage}%"
+        return f"User {self.user} - {self.category.title}"
 
 class CustomUser(AbstractUser):
     telegram_id = models.BigIntegerField(unique=True, null=True, blank=True)

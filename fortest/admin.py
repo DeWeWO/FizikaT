@@ -68,31 +68,19 @@ class TelegramGroupAdmin(admin.ModelAdmin):
 # TestResult admin
 @admin.register(TestResult)
 class TestResultAdmin(admin.ModelAdmin):
-    list_display = ('telegram_id', 'category', 'total_questions', 'correct_answers', 'percentage', 'completed_at')
-    list_filter = ('category', 'completed_at', 'percentage')
-    search_fields = ('telegram_id',)
+    list_display = ('user_fio', 'user_telegram_id', 'category', 'total_questions', 'correct_answers', 'completed_at')
+    list_filter = ('category', 'completed_at')
+    search_fields = ('user__fio', 'user__telegram_id')
     readonly_fields = ('completed_at',)
     
-    # Statistika uchun
-    def changelist_view(self, request, extra_context=None):
-        response = super().changelist_view(request, extra_context=extra_context)
-        
-        try:
-            qs = response.context_data['cl'].queryset
-            
-            # Statistika hisoblash
-            stats = {
-                'total_tests': qs.count(),
-                'average_percentage': qs.aggregate(avg=models.Avg('percentage'))['avg'] or 0,
-                'total_users': qs.values('telegram_id').distinct().count(),
-            }
-            
-            response.context_data['summary'] = stats
-        except (AttributeError, KeyError):
-            pass
-            
-        return response
+    def user_fio(self, obj):
+        return obj.user.fio
+    user_fio.short_description = "FIO"
 
+    def user_telegram_id(self, obj):
+        return obj.user.telegram_id
+    user_telegram_id.short_description = "Telegram ID"
+    
 # Admin panel sozlamalari
 admin.site.site_header = "Test Bot Admin Panel"
 admin.site.site_title = "Test Bot Admin"
