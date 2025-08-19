@@ -3,7 +3,7 @@ import asyncio
 import logging
 from django.db import IntegrityError, transaction
 from django.utils.decorators import method_decorator
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views import View
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -570,3 +570,17 @@ def get_all_group_ids(request):
     """
     groups = TelegramGroup.objects.filter(is_active=True).values_list("group_id", flat=True)
     return Response({"group_ids": list(groups)}, status=status.HTTP_200_OK)
+
+def category_results(request, slug):
+    category = get_object_or_404(Categories, slug=slug)
+    results = TestResult.objects.filter(category=category).select_related('user')
+    
+    data = [{
+        'fio': result.user.fio,
+        'telegram_id': result.user.telegram_id,
+        'total_questions': result.total_questions,
+        'correct_answers': result.correct_answers,
+        'completed_at': result.completed_at.isoformat()
+    } for result in results]
+    
+    return JsonResponse({'results': data})

@@ -4,7 +4,7 @@ from .views import (
     CategoryViewSet, QuestionViewSet, RegisterViewSet,
     TestResultViewSet, CheckTelegramAdminView, CheckUsernameAvailabilityView,
     TelegramAdminRegisterView, CustomUsersListView, RegisterUsersListView, add_telegram_group,
-    get_all_group_ids
+    get_all_group_ids, category_results
 )
 
 router = DefaultRouter()
@@ -22,4 +22,5 @@ urlpatterns = [
     path('register-users/', RegisterUsersListView.as_view(), name='register_users_list'),
     path('telegram/group/add/', add_telegram_group, name='add_telegram_group'),
     path("telegram-groups/all-ids/", get_all_group_ids, name="get_all_group_ids"),
+    path('results/<slug:slug>/', category_results, name='category_results'),
 ]
